@@ -32,8 +32,8 @@ from app.components.language_selector import render_language_selector
 from app.components.text_input import render_text_input
 from app.components.voice_selector import render_voice_selector
 from app.config.settings import settings
-from app.services.base_tts import TTSRequest, TTSSynthesisError
-from app.services.gtts_service import GTTSService
+from app.services.base_tts import BaseTTSService, TTSRequest, TTSSynthesisError
+from app.services.engine_router import get_tts_service as _get_engine
 from app.utils.audio_utils import cleanup_old_files, get_mime_type, save_audio
 from app.utils.logger import setup_logging
 
@@ -56,9 +56,9 @@ st.set_page_config(
 # ---------------------------------------------------------------------------
 
 @st.cache_resource
-def get_tts_service() -> GTTSService:
-    """Return a shared GTTSService instance (not re-created on every rerun)."""
-    return GTTSService()
+def get_tts_service() -> BaseTTSService:
+    """Return the active TTS engine, selected by settings.TTS_ENGINE."""
+    return _get_engine()
 
 
 
@@ -285,7 +285,7 @@ render_history_panel(st.session_state)
 st.divider()
 st.markdown(
     '<p style="text-align:center; color:#475569; font-size:0.78rem;">'
-    "VoiceCraft · Built with gTTS + Streamlit · "
-    "Phase 11 of 17</p>",
+    f"VoiceCraft · Engine: {settings.TTS_ENGINE.upper()} · "
+    "Phase 13 of 17</p>",
     unsafe_allow_html=True,
 )
