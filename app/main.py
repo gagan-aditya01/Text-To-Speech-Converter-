@@ -24,6 +24,7 @@ import logging
 import streamlit as st
 
 from app.components.language_selector import render_language_selector
+from app.components.text_input import render_text_input
 from app.config.settings import settings
 from app.services.base_tts import TTSRequest, TTSSynthesisError
 from app.services.gtts_service import GTTSService
@@ -216,24 +217,12 @@ st.markdown(
 )
 st.markdown("<br>", unsafe_allow_html=True)
 
-# Text input
-st.markdown('<p class="section-label">📝 Enter Text</p>', unsafe_allow_html=True)
-text_input = st.text_area(
-    "Text to convert",
-    placeholder="Type or paste your text here...",
-    height=160,
-    max_chars=settings.MAX_TEXT_LENGTH,
-    label_visibility="collapsed",
-    key="text_input",
-)
-
-# Character counter
-char_count = len(text_input)
-counter_color = "#EF4444" if char_count > settings.MAX_TEXT_LENGTH * 0.9 else "#94A3B8"
-st.markdown(
-    f'<p style="text-align:right; color:{counter_color}; font-size:0.8rem;">'
-    f'{char_count} / {settings.MAX_TEXT_LENGTH} characters</p>',
-    unsafe_allow_html=True,
+# Text input — reusable component (Phase 9)
+text_input, text_is_valid = render_text_input(
+    language_code=selected_lang["code"],
+    max_length=settings.MAX_TEXT_LENGTH,
+    key_prefix="main",
+    height=180,
 )
 
 # Selected language display
@@ -252,8 +241,8 @@ convert_clicked = st.button("🎙️ Convert to Speech", key="convert_btn", use_
 # ---------------------------------------------------------------------------
 
 if convert_clicked:
-    if not text_input.strip():
-        st.error("⚠️ Please enter some text before converting.")
+    if not text_is_valid:
+        st.error("⚠️ Please enter valid text before converting.")
     else:
         with st.spinner("Synthesizing audio..."):
             try:
@@ -335,6 +324,6 @@ st.divider()
 st.markdown(
     '<p style="text-align:center; color:#475569; font-size:0.78rem;">'
     "VoiceCraft · Built with gTTS + Streamlit · "
-    "Phase 8 of 17</p>",
+    "Phase 9 of 17</p>",
     unsafe_allow_html=True,
 )
