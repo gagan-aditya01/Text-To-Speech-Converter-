@@ -232,6 +232,18 @@ def render_text_input(
             unsafe_allow_html=True,
         )
 
+    # Script mismatch warning
+    if language_code != "en":
+        st.markdown(
+            f'<div class="script-hint">'
+            f'💡 <strong>Note:</strong> You selected <strong>{language_code.upper()}</strong>. '
+            f'Make sure your text is written in its native script! Typing English words '
+            f'("hello how are you") into a non-English voice will not translate them — '
+            f'the engine expects native characters.'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
     # Section label
     st.markdown(
         '<p style="color:#A78BFA; font-size:0.78rem; font-weight:600; '

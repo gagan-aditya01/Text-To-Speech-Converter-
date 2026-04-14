@@ -210,15 +210,24 @@ def render_audio_player(result_data: dict) -> None:
     st.markdown("### 🎧 Generated Audio")
 
     # Metadata ribbon
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Language", f"{meta['flag']} {meta['lang']}")
-    with col2:
-        st.metric("Duration", meta["duration"])
-    with col3:
-        st.metric("File Size", meta["file_size"])
-    with col4:
-        st.metric("Engine", meta["engine"])
+    # Metadata ribbon via custom HTML
+    st.markdown(
+        f'<div style="display:flex; gap:1rem; margin-bottom:1.5rem;">'
+        f'<div class="metric-card" style="flex:1;">'
+        f'<div class="metric-label">Language</div>'
+        f'<div class="metric-value">{meta["flag"]} {meta["lang"]}</div></div>'
+        f'<div class="metric-card" style="flex:1;">'
+        f'<div class="metric-label">Duration</div>'
+        f'<div class="metric-value">{meta["duration"]}</div></div>'
+        f'<div class="metric-card" style="flex:1;">'
+        f'<div class="metric-label">File Size</div>'
+        f'<div class="metric-value">{meta["file_size"]}</div></div>'
+        f'<div class="metric-card" style="flex:1;">'
+        f'<div class="metric-label">Engine</div>'
+        f'<div class="metric-value">{meta["engine"]}</div></div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
 
     # Secondary metadata row
     st.markdown(
