@@ -1,22 +1,31 @@
 """
 main.py
 -------
-Streamlit application entry point for the Multi-Language TTS Converter.
+VoiceCraft — Multi-Language TTS Converter
+Streamlit application entry point.
 
 Run with:
     streamlit run app/main.py
+    # or:
+    make run
 
-Architecture:
-    This file wires together all service and utility layers built in Phases 1–7.
-    Phase 8: language selection is now delegated to the reusable
-    app/components/language_selector.py component.
+Architecture (Phases 7–16):
+    Phase 7  — Entry point scaffold
+    Phase 8  — render_language_selector() component
+    Phase 9  — render_text_input() component
+    Phase 10 — render_audio_player() + render_history_panel()
+    Phase 11 — render_voice_selector() component
+    Phase 12 — ElevenLabs engine
+    Phase 13 — Engine router (config-driven engine selection)
+    Phase 14 — Centralized error handler
+    Phase 15 — Integration tests
+    Phase 16 — UI polish & final styling (this file)
 """
 
 import sys
 from pathlib import Path
 
-# Ensure project root is on sys.path so `app.*` imports resolve
-# regardless of the working directory Streamlit is launched from.
+# Ensure project root is on sys.path regardless of CWD
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import logging
@@ -34,12 +43,13 @@ from app.components.voice_selector import render_voice_selector
 from app.config.settings import settings
 from app.services.base_tts import BaseTTSService, TTSRequest, TTSSynthesisError
 from app.services.engine_router import get_tts_service as _get_engine
+from app.styles.css import get_full_css
 from app.utils.audio_utils import cleanup_old_files, get_mime_type, save_audio
 from app.utils.error_handler import format_error_message, render_error_feedback
 from app.utils.logger import setup_logging
 
 # ---------------------------------------------------------------------------
-# Bootstrap — must happen before any st.* calls
+# Bootstrap
 # ---------------------------------------------------------------------------
 
 setup_logging(log_level=settings.LOG_LEVEL)
@@ -50,166 +60,120 @@ st.set_page_config(
     page_icon="🗣️",
     layout="centered",
     initial_sidebar_state="expanded",
+    menu_items={
+        "Get Help": "https://github.com/gagan-aditya01/Text-To-Speech-Converter-",
+        "Report a bug": "https://github.com/gagan-aditya01/Text-To-Speech-Converter-/issues",
+        "About": "VoiceCraft — Multi-Language TTS Converter · Built with gTTS + Streamlit",
+    },
 )
 
+# Inject full design system CSS + Google Fonts
+st.markdown(get_full_css(), unsafe_allow_html=True)
+
 # ---------------------------------------------------------------------------
-# Cached resources — instantiated once per session
+# Cached resources
 # ---------------------------------------------------------------------------
 
 @st.cache_resource
 def get_tts_service() -> BaseTTSService:
-    """Return the active TTS engine, selected by settings.TTS_ENGINE."""
+    """Return the active TTS engine — cached per session, config-driven."""
     return _get_engine()
 
 
-
-
-
 # ---------------------------------------------------------------------------
-# Custom CSS
-# ---------------------------------------------------------------------------
-
-st.markdown("""
-<style>
-/* App background gradient */
-[data-testid="stAppViewContainer"] {
-    background: linear-gradient(135deg, #0F0F1A 0%, #1A1A2E 50%, #16213E 100%);
-}
-
-/* Sidebar */
-[data-testid="stSidebar"] {
-    background: rgba(26, 26, 46, 0.95);
-    border-right: 1px solid rgba(124, 58, 237, 0.3);
-}
-
-/* Primary button */
-div.stButton > button {
-    background: linear-gradient(135deg, #7C3AED, #5B21B6);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    padding: 0.6rem 2rem;
-    font-size: 1rem;
-    font-weight: 600;
-    width: 100%;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
-}
-div.stButton > button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6);
-}
-
-/* Text area */
-textarea {
-    border-radius: 10px !important;
-    border: 1px solid rgba(124, 58, 237, 0.4) !important;
-    font-size: 1rem !important;
-    background: rgba(15, 15, 26, 0.8) !important;
-}
-
-/* Success / error boxes */
-.stAlert {
-    border-radius: 10px !important;
-}
-
-/* Header gradient text */
-.hero-title {
-    font-size: 2.8rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, #7C3AED, #A78BFA, #60A5FA);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    line-height: 1.2;
-    margin-bottom: 0.2rem;
-}
-.hero-sub {
-    color: #94A3B8;
-    font-size: 1.05rem;
-    margin-bottom: 2rem;
-}
-.stat-badge {
-    display: inline-block;
-    background: rgba(124, 58, 237, 0.15);
-    border: 1px solid rgba(124, 58, 237, 0.4);
-    border-radius: 20px;
-    padding: 0.2rem 0.8rem;
-    font-size: 0.8rem;
-    color: #A78BFA;
-    margin-right: 0.5rem;
-}
-.section-label {
-    color: #A78BFA;
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 0.3rem;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# ---------------------------------------------------------------------------
-# Sidebar — Voice & Language options
+# Sidebar
 # ---------------------------------------------------------------------------
 
 with st.sidebar:
-    st.markdown("## ⚙️ Voice Settings")
+    # Header row: title + engine badge
+    engine = settings.TTS_ENGINE.lower()
+    badge_class = f"engine-badge-{engine}"
+    dot_class = f"engine-dot engine-dot-{engine}"
+    st.markdown(
+        f"## ⚙️ Voice Settings &nbsp;"
+        f'<span class="{badge_class}">'
+        f'<span class="{dot_class}"></span>{engine.upper()}</span>',
+        unsafe_allow_html=True,
+    )
     st.divider()
 
-    # Language selector — reusable component (Phase 8)
+    # Language selector (Phase 8)
     selected_lang = render_language_selector(
-        engine="gtts",
+        engine=engine,
         key_prefix="sidebar",
         default_code=settings.DEFAULT_LANGUAGE,
     )
 
-    # Voice selector — reusable component (Phase 11)
+    st.divider()
+
+    # Voice selector (Phase 11)
     voice_config = render_voice_selector(
-        engine="gtts",
+        engine=engine,
         key_prefix="sidebar",
         default_gender=settings.DEFAULT_GENDER,
         default_mood=settings.DEFAULT_MOOD,
         default_speed=1.0,
     )
 
+    st.divider()
+
+    # Quick stats
+    st.markdown(
+        '<p style="color:#475569; font-size:0.72rem; text-align:center; '
+        'padding-top:0.5rem;">'
+        "52 Languages · MP3 Output · Session History</p>",
+        unsafe_allow_html=True,
+    )
+
 # ---------------------------------------------------------------------------
-# Main area
+# Main — Hero
 # ---------------------------------------------------------------------------
 
-# Hero header
-st.markdown('<h1 class="hero-title">🗣️ VoiceCraft</h1>', unsafe_allow_html=True)
+st.markdown(
+    '<h1 class="hero-title">🗣️ VoiceCraft</h1>',
+    unsafe_allow_html=True,
+)
 st.markdown(
     '<p class="hero-sub">Multi-Language AI Voice Synthesizer</p>',
     unsafe_allow_html=True,
 )
+
+# Stat badges row
+active_engine_label = "gTTS Engine" if engine == "gtts" else "ElevenLabs Engine"
 st.markdown(
-    '<span class="stat-badge">52 Languages</span>'
-    '<span class="stat-badge">gTTS Engine</span>'
-    '<span class="stat-badge">MP3 Output</span>',
+    f'<span class="stat-badge">🌐 52 Languages</span>'
+    f'<span class="stat-badge">⚡ {active_engine_label}</span>'
+    f'<span class="stat-badge">🎵 MP3 Output</span>'
+    f'<span class="stat-badge">📜 Session History</span>',
     unsafe_allow_html=True,
 )
 st.markdown("<br>", unsafe_allow_html=True)
 
-# Text input — reusable component (Phase 9)
+# ---------------------------------------------------------------------------
+# Main — Text Input (Phase 9)
+# ---------------------------------------------------------------------------
+
 text_input, text_is_valid = render_text_input(
     language_code=selected_lang["code"],
     max_length=settings.MAX_TEXT_LENGTH,
     key_prefix="main",
-    height=180,
+    height=185,
 )
 
-# Selected language display
+# Config summary bar
 st.info(
-    f"**Selected:** {selected_lang['flag']} {selected_lang['name']} "
-    f"· **Gender:** {voice_gender.title()} "
-    f"· **Mood:** {mood.title()} "
-    f"· **Speed:** {speed}x"
+    f"**{selected_lang['flag']} {selected_lang['name']}** · "
+    f"**{voice_config['gender']}** voice · "
+    f"**{voice_config['mood_emoji']} {voice_config['mood'].title()}** · "
+    f"**{voice_config['speed']}x** {voice_config['speed_label']}"
 )
 
 # Convert button
-convert_clicked = st.button("🎙️ Convert to Speech", key="convert_btn", use_container_width=True)
+convert_clicked = st.button(
+    "🎙️ Convert to Speech",
+    key="convert_btn",
+    use_container_width=True,
+)
 
 # ---------------------------------------------------------------------------
 # Conversion logic
@@ -219,7 +183,7 @@ if convert_clicked:
     if not text_is_valid:
         st.error("⚠️ Please enter valid text before converting.")
     else:
-        with st.spinner("Synthesizing audio..."):
+        with st.spinner("✨ Synthesizing audio..."):
             try:
                 service = get_tts_service()
 
@@ -233,20 +197,18 @@ if convert_clicked:
 
                 result = service.synthesize(request)
 
-                # Save to disk and clean up old files
                 file_path = save_audio(result, output_dir=settings.OUTPUT_DIR)
                 cleanup_old_files(
                     output_dir=settings.OUTPUT_DIR,
                     max_files=settings.MAX_OUTPUT_FILES,
                 )
 
+                char_count = len(text_input.strip())
                 logger.info(
-                    "Conversion complete | lang=%s | chars=%d | file=%s",
-                    selected_lang["code"], char_count, file_path.name,
+                    "Synthesis complete | engine=%s | lang=%s | chars=%d | file=%s",
+                    engine, selected_lang["code"], char_count, file_path.name,
                 )
 
-                # Build enriched result dict for session + component
-                char_count = len(text_input.strip())
                 result_data = {
                     "audio_bytes": result.audio_bytes,
                     "mime_type": get_mime_type(result.audio_format),
@@ -263,15 +225,29 @@ if convert_clicked:
                 st.session_state["last_result"] = result_data
                 add_to_session_history(st.session_state, result_data)
 
+                # Celebrate first-time synthesis
+                if st.session_state.get("synthesis_count", 0) == 0:
+                    st.balloons()
+                st.session_state["synthesis_count"] = (
+                    st.session_state.get("synthesis_count", 0) + 1
+                )
+                st.success(
+                    f"✅ Audio ready! "
+                    f"{selected_lang['flag']} {selected_lang['name']} · "
+                    f"{char_count:,} characters"
+                )
+
             except Exception as exc:
-                error_info = format_error_message(exc, engine=settings.TTS_ENGINE)
+                error_info = format_error_message(exc, engine=engine)
                 render_error_feedback(error_info)
 
-# Audio player — reusable component (Phase 10)
+# ---------------------------------------------------------------------------
+# Audio player (Phase 10) + History (Phase 10)
+# ---------------------------------------------------------------------------
+
 if "last_result" in st.session_state:
     render_audio_player(st.session_state["last_result"])
 
-# Session history panel
 render_history_panel(st.session_state)
 
 # ---------------------------------------------------------------------------
@@ -280,8 +256,13 @@ render_history_panel(st.session_state)
 
 st.divider()
 st.markdown(
-    '<p style="text-align:center; color:#475569; font-size:0.78rem;">'
-    f"VoiceCraft · Engine: {settings.TTS_ENGINE.upper()} · "
-    "Phase 14 of 17</p>",
+    '<div class="app-footer">'
+    "VoiceCraft &nbsp;·&nbsp; "
+    f"Engine: <strong>{engine.upper()}</strong> &nbsp;·&nbsp; "
+    "Built with gTTS + Streamlit &nbsp;·&nbsp; "
+    "Phase 16 of 17 &nbsp;·&nbsp; "
+    '<a href="https://github.com/gagan-aditya01/Text-To-Speech-Converter-" '
+    'target="_blank">GitHub</a>'
+    "</div>",
     unsafe_allow_html=True,
 )
