@@ -23,6 +23,11 @@ import logging
 
 import streamlit as st
 
+from app.components.audio_player import (
+    add_to_session_history,
+    render_audio_player,
+    render_history_panel,
+)
 from app.components.language_selector import render_language_selector
 from app.components.text_input import render_text_input
 from app.config.settings import settings
@@ -270,15 +275,23 @@ if convert_clicked:
                     selected_lang["code"], char_count, file_path.name,
                 )
 
-                # Store result in session state for display
-                st.session_state["last_result"] = {
+                # Build enriched result dict for session + component
+                char_count = len(text_input.strip())
+                result_data = {
                     "audio_bytes": result.audio_bytes,
                     "mime_type": get_mime_type(result.audio_format),
                     "file_name": file_path.name,
                     "lang": selected_lang["name"],
                     "flag": selected_lang["flag"],
                     "chars": char_count,
+                    "engine": result.engine,
+                    "mood": mood,
+                    "voice_gender": voice_gender,
+                    "speed": speed,
+                    "file_size_kb": round(len(result.audio_bytes) / 1024, 2),
                 }
+                st.session_state["last_result"] = result_data
+                add_to_session_history(st.session_state, result_data)
 
             except TTSSynthesisError as exc:
                 st.error(f"❌ Synthesis failed: {exc.reason}")
@@ -289,32 +302,12 @@ if convert_clicked:
                 st.error("❌ An unexpected error occurred. Please try again.")
                 logger.exception("Unexpected error during conversion: %s", exc)
 
-# ---------------------------------------------------------------------------
-# Audio player — persists across reruns via session state
-# ---------------------------------------------------------------------------
-
+# Audio player — reusable component (Phase 10)
 if "last_result" in st.session_state:
-    res = st.session_state["last_result"]
+    render_audio_player(st.session_state["last_result"])
 
-    st.divider()
-    st.markdown("### 🎧 Generated Audio")
-
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        st.markdown(
-            f"**{res['flag']} {res['lang']}** · {res['chars']} characters"
-        )
-
-    st.audio(res["audio_bytes"], format=res["mime_type"])
-
-    st.download_button(
-        label="⬇️ Download MP3",
-        data=res["audio_bytes"],
-        file_name=res["file_name"],
-        mime=res["mime_type"],
-        key="download_btn",
-        use_container_width=True,
-    )
+# Session history panel
+render_history_panel(st.session_state)
 
 # ---------------------------------------------------------------------------
 # Footer
@@ -324,6 +317,6 @@ st.divider()
 st.markdown(
     '<p style="text-align:center; color:#475569; font-size:0.78rem;">'
     "VoiceCraft · Built with gTTS + Streamlit · "
-    "Phase 9 of 17</p>",
+    "Phase 10 of 17</p>",
     unsafe_allow_html=True,
 )
