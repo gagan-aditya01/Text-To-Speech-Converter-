@@ -30,6 +30,7 @@ from app.components.audio_player import (
 )
 from app.components.language_selector import render_language_selector
 from app.components.text_input import render_text_input
+from app.components.voice_selector import render_voice_selector
 from app.config.settings import settings
 from app.services.base_tts import TTSRequest, TTSSynthesisError
 from app.services.gtts_service import GTTSService
@@ -163,46 +164,14 @@ with st.sidebar:
         default_code=settings.DEFAULT_LANGUAGE,
     )
 
-    st.divider()
-
-    # Voice gender
-    st.markdown('<p class="section-label">🎙️ Voice Gender</p>', unsafe_allow_html=True)
-    voice_gender = st.radio(
-        "Voice Gender",
-        options=["female", "male"],
-        index=0,
-        horizontal=True,
-        label_visibility="collapsed",
-        key="voice_gender",
+    # Voice selector — reusable component (Phase 11)
+    voice_config = render_voice_selector(
+        engine="gtts",
+        key_prefix="sidebar",
+        default_gender=settings.DEFAULT_GENDER,
+        default_mood=settings.DEFAULT_MOOD,
+        default_speed=1.0,
     )
-
-    st.divider()
-
-    # Tone / Mood
-    st.markdown('<p class="section-label">🎭 Tone / Mood</p>', unsafe_allow_html=True)
-    mood = st.select_slider(
-        "Mood",
-        options=["calm", "neutral", "formal", "energetic"],
-        value="neutral",
-        label_visibility="collapsed",
-        key="mood",
-    )
-
-    st.divider()
-
-    # Speed
-    st.markdown('<p class="section-label">⚡ Speed</p>', unsafe_allow_html=True)
-    speed = st.slider(
-        "Speed",
-        min_value=0.5,
-        max_value=2.0,
-        value=1.0,
-        step=0.25,
-        label_visibility="collapsed",
-        key="speed",
-    )
-    speed_label = "🐢 Slow" if speed < 1.0 else ("🐇 Fast" if speed > 1.0 else "▶️ Normal")
-    st.caption(f"{speed_label} ({speed}x)")
 
 # ---------------------------------------------------------------------------
 # Main area
@@ -256,9 +225,9 @@ if convert_clicked:
                 request = TTSRequest(
                     text=text_input.strip(),
                     language_code=selected_lang["code"],
-                    voice_gender=voice_gender,
-                    mood=mood,
-                    speed=speed,
+                    voice_gender=voice_config["gender"],
+                    mood=voice_config["mood"],
+                    speed=voice_config["speed"],
                 )
 
                 result = service.synthesize(request)
@@ -285,9 +254,9 @@ if convert_clicked:
                     "flag": selected_lang["flag"],
                     "chars": char_count,
                     "engine": result.engine,
-                    "mood": mood,
-                    "voice_gender": voice_gender,
-                    "speed": speed,
+                    "mood": voice_config["mood"],
+                    "voice_gender": voice_config["gender"],
+                    "speed": voice_config["speed"],
                     "file_size_kb": round(len(result.audio_bytes) / 1024, 2),
                 }
                 st.session_state["last_result"] = result_data
@@ -317,6 +286,6 @@ st.divider()
 st.markdown(
     '<p style="text-align:center; color:#475569; font-size:0.78rem;">'
     "VoiceCraft · Built with gTTS + Streamlit · "
-    "Phase 10 of 17</p>",
+    "Phase 11 of 17</p>",
     unsafe_allow_html=True,
 )
