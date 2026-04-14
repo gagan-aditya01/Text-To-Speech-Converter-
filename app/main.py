@@ -7,10 +7,9 @@ Run with:
     streamlit run app/main.py
 
 Architecture:
-    This file wires together all service and utility layers built in Phases 1–6.
-    UI components (language selector, voice selector, audio player) will be
-    extracted into app/components/ in Phases 8–10. For now all widget logic
-    lives here for a clean, testable proof of concept.
+    This file wires together all service and utility layers built in Phases 1–7.
+    Phase 8: language selection is now delegated to the reusable
+    app/components/language_selector.py component.
 """
 
 import sys
@@ -24,11 +23,11 @@ import logging
 
 import streamlit as st
 
+from app.components.language_selector import render_language_selector
 from app.config.settings import settings
 from app.services.base_tts import TTSRequest, TTSSynthesisError
 from app.services.gtts_service import GTTSService
 from app.utils.audio_utils import cleanup_old_files, get_mime_type, save_audio
-from app.utils.language_data import format_display_label, get_all_languages
 from app.utils.logger import setup_logging
 
 # ---------------------------------------------------------------------------
@@ -55,10 +54,7 @@ def get_tts_service() -> GTTSService:
     return GTTSService()
 
 
-@st.cache_data
-def get_language_options() -> list[dict]:
-    """Return gTTS-supported languages, cached for the session."""
-    return get_all_languages(engine="gtts")
+
 
 
 # ---------------------------------------------------------------------------
@@ -154,46 +150,12 @@ with st.sidebar:
     st.markdown("## ⚙️ Voice Settings")
     st.divider()
 
-    languages = get_language_options()
-    lang_labels = [format_display_label(l) for l in languages]
-
-    # Language search — filter the selectbox options dynamically
-    st.markdown('<p class="section-label">🌐 Language</p>', unsafe_allow_html=True)
-    lang_search = st.text_input(
-        "Search language",
-        placeholder="e.g. Hindi, French, zh...",
-        label_visibility="collapsed",
-        key="lang_search",
+    # Language selector — reusable component (Phase 8)
+    selected_lang = render_language_selector(
+        engine="gtts",
+        key_prefix="sidebar",
+        default_code=settings.DEFAULT_LANGUAGE,
     )
-
-    filtered_langs = (
-        [l for l in languages if lang_search.lower() in l["name"].lower()
-         or lang_search.lower() in l["native"].lower()
-         or lang_search.lower() in l["code"].lower()]
-        if lang_search
-        else languages
-    )
-
-    if not filtered_langs:
-        st.warning("No matching languages found.")
-        filtered_langs = languages  # Fallback to full list
-
-    filtered_labels = [format_display_label(l) for l in filtered_langs]
-
-    # Find default index
-    default_code = settings.DEFAULT_LANGUAGE
-    default_idx = next(
-        (i for i, l in enumerate(filtered_langs) if l["code"] == default_code), 0
-    )
-
-    selected_label = st.selectbox(
-        "Select Language",
-        options=filtered_labels,
-        index=default_idx,
-        label_visibility="collapsed",
-        key="lang_select",
-    )
-    selected_lang = filtered_langs[filtered_labels.index(selected_label)]
 
     st.divider()
 
@@ -373,6 +335,6 @@ st.divider()
 st.markdown(
     '<p style="text-align:center; color:#475569; font-size:0.78rem;">'
     "VoiceCraft · Built with gTTS + Streamlit · "
-    "Phase 7 of 17</p>",
+    "Phase 8 of 17</p>",
     unsafe_allow_html=True,
 )
