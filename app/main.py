@@ -35,6 +35,7 @@ from app.config.settings import settings
 from app.services.base_tts import BaseTTSService, TTSRequest, TTSSynthesisError
 from app.services.engine_router import get_tts_service as _get_engine
 from app.utils.audio_utils import cleanup_old_files, get_mime_type, save_audio
+from app.utils.error_handler import format_error_message, render_error_feedback
 from app.utils.logger import setup_logging
 
 # ---------------------------------------------------------------------------
@@ -262,14 +263,9 @@ if convert_clicked:
                 st.session_state["last_result"] = result_data
                 add_to_session_history(st.session_state, result_data)
 
-            except TTSSynthesisError as exc:
-                st.error(f"❌ Synthesis failed: {exc.reason}")
-                logger.error("Synthesis error: %s", exc)
-            except ValueError as exc:
-                st.error(f"❌ Invalid input: {exc}")
             except Exception as exc:
-                st.error("❌ An unexpected error occurred. Please try again.")
-                logger.exception("Unexpected error during conversion: %s", exc)
+                error_info = format_error_message(exc, engine=settings.TTS_ENGINE)
+                render_error_feedback(error_info)
 
 # Audio player — reusable component (Phase 10)
 if "last_result" in st.session_state:
@@ -286,6 +282,6 @@ st.divider()
 st.markdown(
     '<p style="text-align:center; color:#475569; font-size:0.78rem;">'
     f"VoiceCraft · Engine: {settings.TTS_ENGINE.upper()} · "
-    "Phase 13 of 17</p>",
+    "Phase 14 of 17</p>",
     unsafe_allow_html=True,
 )
