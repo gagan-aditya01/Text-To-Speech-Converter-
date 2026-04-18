@@ -1,11 +1,10 @@
 """
 voice_selector.py
 -----------------
-Reusable Streamlit component for voice gender, mood, and speed selection.
+Reusable Streamlit component for voice gender and speed selection.
 
 Two-layer pattern (same as all other components):
-  1. Pure logic functions  — get_all_moods, filter_moods, get_speed_label,
-                             get_mood_emoji, build_voice_config,
+  1. Pure logic functions  — get_speed_label, build_voice_config,
                              validate_voice_config
                              → independently testable, no Streamlit dependency
   2. Render function       — render_voice_selector()
@@ -15,52 +14,19 @@ Usage:
     from app.components.voice_selector import render_voice_selector
 
     voice_config = render_voice_selector(key_prefix="sidebar")
-    # Returns: {"gender": "female", "mood": "calm", "speed": 1.0}
+    # Returns: {"gender": "female", "speed": 1.0}
 """
 
 import streamlit as st
 
 # ---------------------------------------------------------------------------
-# Voice / Mood Metadata
+# Voice Metadata
 # ---------------------------------------------------------------------------
-
-# Full mood registry — name, emoji, description, and valid engines
-_MOODS: list[dict] = [
-    {
-        "id":          "neutral",
-        "label":       "Neutral",
-        "emoji":       "😐",
-        "description": "Balanced, everyday tone — works for any content",
-        "engines":     ["gtts", "elevenlabs"],
-    },
-    {
-        "id":          "calm",
-        "label":       "Calm",
-        "emoji":       "😌",
-        "description": "Slow, soothing delivery — ideal for meditation or narration",
-        "engines":     ["gtts", "elevenlabs"],
-    },
-    {
-        "id":          "formal",
-        "label":       "Formal",
-        "emoji":       "🎩",
-        "description": "Professional, measured tone — suitable for business or news",
-        "engines":     ["gtts", "elevenlabs"],
-    },
-    {
-        "id":          "energetic",
-        "label":       "Energetic",
-        "emoji":       "⚡",
-        "description": "Lively, upbeat delivery — great for promotions or announcements",
-        "engines":     ["gtts", "elevenlabs"],
-    },
-]
 
 # Gender options with display metadata
 _GENDERS: list[dict] = [
     {"id": "female",  "label": "Female",  "emoji": "👩"},
     {"id": "male",    "label": "Male",    "emoji": "👨"},
-    {"id": "neutral", "label": "Neutral", "emoji": "🧑"},
 ]
 
 # Speed presets with labels
@@ -77,47 +43,6 @@ _SPEED_PRESETS: list[dict] = [
 # ---------------------------------------------------------------------------
 # Pure Logic Functions
 # ---------------------------------------------------------------------------
-
-def get_all_moods(engine: str = "gtts") -> list[dict]:
-    """
-    Return all mood options, optionally filtered by engine support.
-
-    Args:
-        engine: "gtts" | "elevenlabs" | "all"
-
-    Returns:
-        List of mood dicts with id, label, emoji, description.
-    """
-    if engine == "all":
-        return _MOODS
-    return [m for m in _MOODS if engine in m["engines"]]
-
-
-def filter_moods(moods: list[dict], query: str) -> list[dict]:
-    """
-    Filter moods by a search query against label and description.
-
-    Falls back to full list if no matches found.
-
-    Args:
-        moods: List of mood dicts.
-        query: User search string (case-insensitive).
-
-    Returns:
-        Filtered list, never empty.
-    """
-    query = query.strip().lower()
-    if not query:
-        return moods
-
-    matched = [
-        m for m in moods
-        if query in m["label"].lower()
-        or query in m["description"].lower()
-        or query in m["id"].lower()
-    ]
-    return matched if matched else moods
-
 
 def get_speed_label(speed: float) -> str:
     """
@@ -141,29 +66,12 @@ def get_speed_label(speed: float) -> str:
     return "▶️ Normal"
 
 
-def get_mood_emoji(mood_id: str) -> str:
-    """
-    Return the emoji for a given mood ID.
-
-    Args:
-        mood_id: Mood identifier e.g. "calm", "energetic".
-
-    Returns:
-        Emoji string. Defaults to "😐" for unknown moods.
-    """
-    for mood in _MOODS:
-        if mood["id"] == mood_id:
-            return mood["emoji"]
-    return "😐"
-
-
-def build_voice_config(gender: str, mood: str, speed: float) -> dict:
+def build_voice_config(gender: str, speed: float) -> dict:
     """
     Assemble a validated voice configuration dict.
 
     Args:
-        gender: "male" | "female" | "neutral"
-        mood:   "neutral" | "calm" | "formal" | "energetic"
+        gender: "male" | "female"
         speed:  Float 0.5–2.0
 
     Returns:
@@ -173,21 +81,18 @@ def build_voice_config(gender: str, mood: str, speed: float) -> dict:
         ValueError: If any value is outside allowed ranges.
     """
     valid_genders = {g["id"] for g in _GENDERS}
-    valid_moods = {m["id"] for m in _MOODS}
 
     if gender not in valid_genders:
         raise ValueError(f"Invalid gender '{gender}'. Must be one of: {sorted(valid_genders)}")
-    if mood not in valid_moods:
-        raise ValueError(f"Invalid mood '{mood}'. Must be one of: {sorted(valid_moods)}")
     if not (0.5 <= speed <= 2.0):
         raise ValueError(f"Invalid speed '{speed}'. Must be between 0.5 and 2.0.")
 
     return {
         "gender":      gender,
-        "mood":        mood,
+        # We implicitly provide "calm" mood to avoid breaking downstream services that expect it
+        "mood":        "calm",
         "speed":       speed,
         "speed_label": get_speed_label(speed),
-        "mood_emoji":  get_mood_emoji(mood),
         "is_slow":     speed < 1.0,
     }
 
@@ -197,7 +102,7 @@ def validate_voice_config(config: dict) -> tuple[bool, str]:
     Validate a voice config dict produced by build_voice_config.
 
     Args:
-        config: Dict with gender, mood, speed keys.
+        config: Dict with gender, speed keys.
 
     Returns:
         Tuple (is_valid: bool, error_message: str).
@@ -205,44 +110,11 @@ def validate_voice_config(config: dict) -> tuple[bool, str]:
     try:
         build_voice_config(
             gender=config.get("gender", ""),
-            mood=config.get("mood", ""),
             speed=config.get("speed", 1.0),
         )
         return True, ""
     except ValueError as exc:
         return False, str(exc)
-
-
-def get_mood_display_options(moods: list[dict]) -> list[str]:
-    """
-    Build formatted display strings for the mood selectbox.
-
-    Format: "{emoji} {label} — {description}"
-
-    Args:
-        moods: List of mood dicts.
-
-    Returns:
-        List of display strings.
-    """
-    return [f"{m['emoji']} {m['label']} — {m['description']}" for m in moods]
-
-
-def resolve_mood_from_display(display: str, moods: list[dict]) -> str:
-    """
-    Reverse-lookup: given a display string, return the mood ID.
-
-    Args:
-        display: Formatted display string from get_mood_display_options().
-        moods:   The mood list the display was built from.
-
-    Returns:
-        Mood ID string e.g. "calm". Returns "neutral" if not found.
-    """
-    for mood in moods:
-        if display.startswith(f"{mood['emoji']} {mood['label']}"):
-            return mood["id"]
-    return "neutral"
 
 
 # ---------------------------------------------------------------------------
@@ -253,65 +125,24 @@ def render_voice_selector(
     engine: str = "gtts",
     key_prefix: str = "",
     default_gender: str = "female",
-    default_mood: str = "neutral",
     default_speed: float = 1.0,
 ) -> dict:
     """
     Render the full voice configuration panel inside the current Streamlit context.
 
     Displays:
-      - Mood search bar with dynamic filtering
-      - Searchable mood selector (emoji + description)
       - Gender radio buttons
       - Speed slider with live label
 
     Args:
-        engine:         TTS engine — determines available moods.
+        engine:         TTS engine string.
         key_prefix:     Unique prefix for widget keys.
         default_gender: Pre-selected gender.
-        default_mood:   Pre-selected mood ID.
         default_speed:  Pre-selected speed value.
 
     Returns:
-        VoiceConfig dict with keys: gender, mood, speed, speed_label,
-        mood_emoji, is_slow.
+        VoiceConfig dict with keys: gender, mood, speed, speed_label, is_slow.
     """
-    all_moods = get_all_moods(engine=engine)
-
-    # --- Mood ---
-    st.markdown(
-        '<p style="color:#A78BFA; font-size:0.78rem; font-weight:600; '
-        'letter-spacing:0.08em; text-transform:uppercase; margin-bottom:4px;">'
-        "🎭 Tone / Mood</p>",
-        unsafe_allow_html=True,
-    )
-
-    # Mood search bar
-    mood_search = st.text_input(
-        "Search mood",
-        placeholder="e.g. calm, formal, energetic...",
-        key=f"{key_prefix}_mood_search",
-        label_visibility="collapsed",
-    )
-
-    filtered_moods = filter_moods(all_moods, mood_search)
-    mood_options = get_mood_display_options(filtered_moods)
-
-    # Find default index
-    default_mood_idx = next(
-        (i for i, m in enumerate(filtered_moods) if m["id"] == default_mood), 0
-    )
-
-    selected_mood_display = st.selectbox(
-        "Mood",
-        options=mood_options,
-        index=default_mood_idx,
-        key=f"{key_prefix}_mood_select",
-        label_visibility="collapsed",
-    )
-    selected_mood_id = resolve_mood_from_display(selected_mood_display, filtered_moods)
-
-    st.divider()
 
     # --- Gender ---
     st.markdown(
@@ -359,6 +190,5 @@ def render_voice_selector(
 
     return build_voice_config(
         gender=selected_gender_id,
-        mood=selected_mood_id,
         speed=speed,
     )

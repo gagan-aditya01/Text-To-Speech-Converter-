@@ -45,10 +45,16 @@ def _make_elevenlabs() -> "ElevenLabsService":           # noqa: F821 — lazy i
     return ElevenLabsService()
 
 
+def _make_edgetts() -> "EdgeTTSService":
+    from app.services.edgetts_service import EdgeTTSService
+    return EdgeTTSService()
+
+
 # Registry: engine_name → factory function
 _ENGINE_REGISTRY: dict[str, callable] = {
     "gtts":       _make_gtts,
     "elevenlabs": _make_elevenlabs,
+    "edgetts":    _make_edgetts,
 }
 
 

@@ -43,6 +43,7 @@ from app.components.voice_selector import render_voice_selector
 from app.config.settings import settings
 from app.services.base_tts import BaseTTSService, TTSRequest, TTSSynthesisError
 from app.services.engine_router import get_tts_service as _get_engine
+from app.services.translation_service import translate_text
 from app.styles.css import get_full_css
 from app.utils.audio_utils import cleanup_old_files, get_mime_type, save_audio
 from app.utils.error_handler import format_error_message, render_error_feedback
@@ -90,9 +91,7 @@ with st.sidebar:
     badge_class = f"engine-badge-{engine}"
     dot_class = f"engine-dot engine-dot-{engine}"
     st.markdown(
-        f"## ⚙️ Voice Settings &nbsp;"
-        f'<span class="{badge_class}">'
-        f'<span class="{dot_class}"></span>{engine.upper()}</span>',
+        "## ⚙️ Voice Settings",
         unsafe_allow_html=True,
     )
     st.divider()
@@ -111,7 +110,6 @@ with st.sidebar:
         engine=engine,
         key_prefix="sidebar",
         default_gender=settings.DEFAULT_GENDER,
-        default_mood=settings.DEFAULT_MOOD,
         default_speed=1.0,
     )
 
@@ -139,7 +137,13 @@ st.markdown(
 )
 
 # Stat badges row
-active_engine_label = "gTTS Engine" if engine == "gtts" else "ElevenLabs Engine"
+if engine == "gtts":
+    active_engine_label = "gTTS Engine"
+elif engine == "edgetts":
+    active_engine_label = "EdgeTTS Neural"
+else:
+    active_engine_label = "ElevenLabs Engine"
+    
 st.markdown(
     f'<span class="stat-badge">🌐 52 Languages</span>'
     f'<span class="stat-badge">⚡ {active_engine_label}</span>'
@@ -164,7 +168,6 @@ text_input, text_is_valid = render_text_input(
 st.info(
     f"**{selected_lang['flag']} {selected_lang['name']}** · "
     f"**{voice_config['gender']}** voice · "
-    f"**{voice_config['mood_emoji']} {voice_config['mood'].title()}** · "
     f"**{voice_config['speed']}x** {voice_config['speed_label']}"
 )
 
@@ -183,12 +186,18 @@ if convert_clicked:
     if not text_is_valid:
         st.error("⚠️ Please enter valid text before converting.")
     else:
-        with st.spinner("✨ Synthesizing audio..."):
-            try:
+        try:
+            with st.spinner(f"🌍 Translating to {selected_lang['name']}..."):
+                translated_text = translate_text(text_input.strip(), selected_lang["code"])
+
+            if translated_text.lower() != text_input.strip().lower():
+                st.info(f"**Translated Text ({selected_lang['name']}):**\n\n{translated_text}")
+
+            with st.spinner("✨ Synthesizing audio..."):
                 service = get_tts_service()
 
                 request = TTSRequest(
-                    text=text_input.strip(),
+                    text=translated_text,
                     language_code=selected_lang["code"],
                     voice_gender=voice_config["gender"],
                     mood=voice_config["mood"],
@@ -237,9 +246,9 @@ if convert_clicked:
                     f"{char_count:,} characters"
                 )
 
-            except Exception as exc:
-                error_info = format_error_message(exc, engine=engine)
-                render_error_feedback(error_info)
+        except Exception as exc:
+            error_info = format_error_message(exc, engine=engine)
+            render_error_feedback(error_info)
 
 # ---------------------------------------------------------------------------
 # Audio player (Phase 10) + History (Phase 10)

@@ -1,11 +1,15 @@
 # Core TTS engines
 gTTS==2.5.1
+edge-tts==7.2.8
 
 # ElevenLabs premium TTS (optional, for Phase 12)
 elevenlabs==1.1.2
 
 # Web UI
 streamlit==1.33.0
+
+# Translation
+deep-translator==1.11.4
 
 # Environment management
 python-dotenv==1.0.1

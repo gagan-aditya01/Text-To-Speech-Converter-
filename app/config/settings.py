@@ -38,10 +38,10 @@ logger = logging.getLogger(__name__)
 # Valid values — used for validation and UI dropdowns
 # ---------------------------------------------------------------------------
 
-VALID_TTS_ENGINES = frozenset({"gtts", "elevenlabs"})
+VALID_TTS_ENGINES = frozenset({"gtts", "elevenlabs", "edgetts"})
 VALID_LOG_LEVELS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"})
-VALID_VOICE_GENDERS = frozenset({"male", "female", "neutral"})
-VALID_MOODS = frozenset({"neutral", "calm", "energetic", "formal"})
+VALID_VOICE_GENDERS = frozenset({"male", "female"})
+VALID_MOODS = frozenset({"calm", "energetic", "formal"})
 
 
 @dataclass
@@ -64,10 +64,10 @@ class Settings:
         MAX_TEXT_LENGTH:     Maximum characters accepted in a single TTS request.
     """
 
-    TTS_ENGINE: str = field(default_factory=lambda: os.getenv("TTS_ENGINE", "gtts").lower())
+    TTS_ENGINE: str = field(default_factory=lambda: os.getenv("TTS_ENGINE", "edgetts").lower())
     DEFAULT_LANGUAGE: str = field(default_factory=lambda: os.getenv("DEFAULT_LANGUAGE", "en"))
     DEFAULT_GENDER: str = field(default_factory=lambda: os.getenv("DEFAULT_GENDER", "female").lower())
-    DEFAULT_MOOD: str = field(default_factory=lambda: os.getenv("DEFAULT_MOOD", "neutral").lower())
+    DEFAULT_MOOD: str = field(default_factory=lambda: os.getenv("DEFAULT_MOOD", "calm").lower())
     OUTPUT_DIR: Path = field(default_factory=lambda: Path(os.getenv("OUTPUT_DIR", "outputs")))
     MAX_OUTPUT_FILES: int = field(default_factory=lambda: int(os.getenv("MAX_OUTPUT_FILES", "50")))
     LOG_LEVEL: str = field(default_factory=lambda: os.getenv("LOG_LEVEL", "INFO").upper())
