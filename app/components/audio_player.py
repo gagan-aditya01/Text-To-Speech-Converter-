@@ -125,7 +125,7 @@ def build_audio_metadata(result_data: dict) -> dict:
 
     return {
         "lang": result_data.get("lang", "Unknown"),
-        "flag": result_data.get("flag", "🌐"),
+        "flag": "",
         "engine": result_data.get("engine", "gtts").upper(),
         "chars": char_count,
         "file_name": result_data.get("file_name", "audio.mp3"),
@@ -207,7 +207,7 @@ def render_audio_player(result_data: dict) -> None:
     meta = build_audio_metadata(result_data)
 
     st.divider()
-    st.markdown("### 🎧 Generated Audio")
+    st.markdown("### Generated Audio")
 
     # Metadata ribbon
     # Metadata ribbon via custom HTML
@@ -215,7 +215,7 @@ def render_audio_player(result_data: dict) -> None:
         f'<div style="display:flex; gap:1rem; margin-bottom:1.5rem;">'
         f'<div class="metric-card" style="flex:1;">'
         f'<div class="metric-label">Language</div>'
-        f'<div class="metric-value">{meta["flag"]} {meta["lang"]}</div></div>'
+        f'<div class="metric-value">{meta["lang"]}</div></div>'
         f'<div class="metric-card" style="flex:1;">'
         f'<div class="metric-label">Duration</div>'
         f'<div class="metric-value">{meta["duration"]}</div></div>'
@@ -245,7 +245,7 @@ def render_audio_player(result_data: dict) -> None:
 
     # Download button
     st.download_button(
-        label="⬇️ Download MP3",
+        label="Download MP3",
         data=result_data["audio_bytes"],
         file_name=meta["file_name"],
         mime=result_data.get("mime_type", "audio/mpeg"),
@@ -269,12 +269,12 @@ def render_history_panel(session_state: dict) -> None:
         return
 
     st.divider()
-    with st.expander(f"📜 Recent Conversions ({len(history)})", expanded=False):
+    with st.expander(f"Recent Conversions ({len(history)})", expanded=False):
         for i, entry in enumerate(history):
             meta = build_audio_metadata(entry)
             cols = st.columns([1, 3, 1, 1])
             with cols[0]:
-                st.markdown(f"**{meta['flag']}**")
+                st.markdown(f"**-**")
             with cols[1]:
                 st.markdown(
                     f"<small>{meta['lang']} · {meta['chars']:,} chars · "

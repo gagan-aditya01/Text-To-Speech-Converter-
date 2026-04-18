@@ -129,4 +129,4 @@ def format_display_label(lang: dict) -> str:
     Returns:
         Formatted display string.
     """
-    return f"{lang['flag']} {lang['name']} ({lang['native']})"
+    return f"{lang['name']} ({lang['native']})"

@@ -58,7 +58,6 @@ logger = logging.getLogger(__name__)
 
 st.set_page_config(
     page_title="VoiceCraft — Multi-Language TTS",
-    page_icon="🗣️",
     layout="centered",
     initial_sidebar_state="expanded",
     menu_items={
@@ -91,7 +90,7 @@ with st.sidebar:
     badge_class = f"engine-badge-{engine}"
     dot_class = f"engine-dot engine-dot-{engine}"
     st.markdown(
-        "## ⚙️ Voice Settings",
+        "## Voice Settings",
         unsafe_allow_html=True,
     )
     st.divider()
@@ -128,7 +127,7 @@ with st.sidebar:
 # ---------------------------------------------------------------------------
 
 st.markdown(
-    '<h1 class="hero-title">🗣️ VoiceCraft</h1>',
+    '<h1 class="hero-title">VoiceCraft</h1>',
     unsafe_allow_html=True,
 )
 st.markdown(
@@ -145,10 +144,10 @@ else:
     active_engine_label = "ElevenLabs Engine"
     
 st.markdown(
-    f'<span class="stat-badge">🌐 52 Languages</span>'
-    f'<span class="stat-badge">⚡ {active_engine_label}</span>'
-    f'<span class="stat-badge">🎵 MP3 Output</span>'
-    f'<span class="stat-badge">📜 Session History</span>',
+    f'<span class="stat-badge">52 Languages</span>'
+    f'<span class="stat-badge">{active_engine_label}</span>'
+    f'<span class="stat-badge">MP3 Output</span>'
+    f'<span class="stat-badge">Session History</span>',
     unsafe_allow_html=True,
 )
 st.markdown("<br>", unsafe_allow_html=True)
@@ -166,14 +165,14 @@ text_input, text_is_valid = render_text_input(
 
 # Config summary bar
 st.info(
-    f"**{selected_lang['flag']} {selected_lang['name']}** · "
+    f"**{selected_lang['name']}** · "
     f"**{voice_config['gender']}** voice · "
     f"**{voice_config['speed']}x** {voice_config['speed_label']}"
 )
 
 # Convert button
 convert_clicked = st.button(
-    "🎙️ Convert to Speech",
+    "Convert to Speech",
     key="convert_btn",
     use_container_width=True,
 )
@@ -184,16 +183,16 @@ convert_clicked = st.button(
 
 if convert_clicked:
     if not text_is_valid:
-        st.error("⚠️ Please enter valid text before converting.")
+        st.error("Please enter valid text before converting.")
     else:
         try:
-            with st.spinner(f"🌍 Translating to {selected_lang['name']}..."):
+            with st.spinner(f"Translating to {selected_lang['name']}..."):
                 translated_text = translate_text(text_input.strip(), selected_lang["code"])
 
             if translated_text.lower() != text_input.strip().lower():
                 st.info(f"**Translated Text ({selected_lang['name']}):**\n\n{translated_text}")
 
-            with st.spinner("✨ Synthesizing audio..."):
+            with st.spinner("Synthesizing audio..."):
                 service = get_tts_service()
 
                 request = TTSRequest(
@@ -223,7 +222,6 @@ if convert_clicked:
                     "mime_type": get_mime_type(result.audio_format),
                     "file_name": file_path.name,
                     "lang": selected_lang["name"],
-                    "flag": selected_lang["flag"],
                     "chars": char_count,
                     "engine": result.engine,
                     "mood": voice_config["mood"],
@@ -234,15 +232,12 @@ if convert_clicked:
                 st.session_state["last_result"] = result_data
                 add_to_session_history(st.session_state, result_data)
 
-                # Celebrate first-time synthesis
-                if st.session_state.get("synthesis_count", 0) == 0:
-                    st.balloons()
                 st.session_state["synthesis_count"] = (
                     st.session_state.get("synthesis_count", 0) + 1
                 )
                 st.success(
-                    f"✅ Audio ready! "
-                    f"{selected_lang['flag']} {selected_lang['name']} · "
+                    f"Audio ready! "
+                    f"{selected_lang['name']} · "
                     f"{char_count:,} characters"
                 )
 

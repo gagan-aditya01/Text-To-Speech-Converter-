@@ -162,9 +162,9 @@ def render_language_selector(
 
     # Search input
     st.markdown(
-        '<p style="color:#A78BFA; font-size:0.78rem; font-weight:600; '
+        '<p style="color:#8B7355; font-size:0.78rem; font-weight:600; '
         'letter-spacing:0.08em; text-transform:uppercase; margin-bottom:4px;">'
-        "🌐 Language</p>",
+        "Language</p>",
         unsafe_allow_html=True,
     )
 

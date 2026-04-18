@@ -227,8 +227,8 @@ def render_text_input(
     rtl = is_rtl_language(language_code)
     if rtl:
         st.markdown(
-            '<p style="color:#F59E0B; font-size:0.78rem; margin-bottom:4px;">'
-            "↩️ Right-to-left language detected — text will render in RTL direction.</p>",
+            '<p style="color:#8B7355; font-size:0.78rem; margin-bottom:4px;">'
+            "Right-to-left language detected — text will render in RTL direction.</p>",
             unsafe_allow_html=True,
         )
 
@@ -236,7 +236,7 @@ def render_text_input(
     if language_code != "en":
         st.markdown(
             f'<div class="script-hint">'
-            f'💡 <strong>Note:</strong> You selected <strong>{language_code.upper()}</strong>. '
+            f'<strong>Note:</strong> You selected <strong>{language_code.upper()}</strong>. '
             f'Make sure your text is written in its native script! Typing English words '
             f'("hello how are you") into a non-English voice will not translate them — '
             f'the engine expects native characters.'
@@ -246,9 +246,9 @@ def render_text_input(
 
     # Section label
     st.markdown(
-        '<p style="color:#A78BFA; font-size:0.78rem; font-weight:600; '
+        '<p style="color:#8B7355; font-size:0.78rem; font-weight:600; '
         'letter-spacing:0.08em; text-transform:uppercase; margin-bottom:4px;">'
-        "📝 Enter Text</p>",
+        "Enter Text</p>",
         unsafe_allow_html=True,
     )
 
@@ -280,6 +280,6 @@ def render_text_input(
     is_valid, error_msg = validate_text(text, max_length)
 
     if text and not is_valid:
-        st.error(f"⚠️ {error_msg}")
+        st.error(f"{error_msg}")
 
     return text, is_valid

@@ -25,18 +25,18 @@ import streamlit as st
 
 # Gender options with display metadata
 _GENDERS: list[dict] = [
-    {"id": "female",  "label": "Female",  "emoji": "👩"},
-    {"id": "male",    "label": "Male",    "emoji": "👨"},
+    {"id": "female",  "label": "Female"},
+    {"id": "male",    "label": "Male"},
 ]
 
 # Speed presets with labels
 _SPEED_PRESETS: list[dict] = [
-    {"value": 0.5,  "label": "🐢 Slow",    "description": "Half speed — great for learners"},
-    {"value": 0.75, "label": "🚶 Relaxed", "description": "75% speed"},
-    {"value": 1.0,  "label": "▶️ Normal",  "description": "Default speed"},
-    {"value": 1.25, "label": "🏃 Brisk",   "description": "125% speed"},
-    {"value": 1.5,  "label": "🐇 Fast",    "description": "150% speed — time-efficient"},
-    {"value": 2.0,  "label": "⚡ Maximum", "description": "Double speed"},
+    {"value": 0.5,  "label": "Slow",    "description": "Half speed — great for learners"},
+    {"value": 0.75, "label": "Relaxed", "description": "75% speed"},
+    {"value": 1.0,  "label": "Normal",  "description": "Default speed"},
+    {"value": 1.25, "label": "Brisk",   "description": "125% speed"},
+    {"value": 1.5,  "label": "Fast",    "description": "150% speed — time-efficient"},
+    {"value": 2.0,  "label": "Maximum", "description": "Double speed"},
 ]
 
 
@@ -60,10 +60,10 @@ def get_speed_label(speed: float) -> str:
 
     # Interpolated label for values between presets
     if speed < 1.0:
-        return "🐢 Slow"
+        return "Slow"
     if speed > 1.0:
-        return "🐇 Fast"
-    return "▶️ Normal"
+        return "Fast"
+    return "Normal"
 
 
 def build_voice_config(gender: str, speed: float) -> dict:
@@ -146,13 +146,13 @@ def render_voice_selector(
 
     # --- Gender ---
     st.markdown(
-        '<p style="color:#A78BFA; font-size:0.78rem; font-weight:600; '
+        '<p style="color:#8B7355; font-size:0.78rem; font-weight:600; '
         'letter-spacing:0.08em; text-transform:uppercase; margin-bottom:4px;">'
-        "🎙️ Voice Gender</p>",
+        "Voice Gender</p>",
         unsafe_allow_html=True,
     )
 
-    gender_labels = [f"{g['emoji']} {g['label']}" for g in _GENDERS]
+    gender_labels = [f"{g['label']}" for g in _GENDERS]
     default_gender_idx = next(
         (i for i, g in enumerate(_GENDERS) if g["id"] == default_gender), 0
     )
@@ -171,9 +171,9 @@ def render_voice_selector(
 
     # --- Speed ---
     st.markdown(
-        '<p style="color:#A78BFA; font-size:0.78rem; font-weight:600; '
+        '<p style="color:#8B7355; font-size:0.78rem; font-weight:600; '
         'letter-spacing:0.08em; text-transform:uppercase; margin-bottom:4px;">'
-        "⚡ Speed</p>",
+        "Speed</p>",
         unsafe_allow_html=True,
     )
 
